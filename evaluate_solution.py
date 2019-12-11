@@ -19,14 +19,57 @@ def cost_solution(Q, F, H, L_f, a, st_f, gr_C, tr_P):
     for f in st_f:
         c_tot += c_st(f)
     for P in tr_P:
-        nb_f = P[3]
-        list_f = P[4]
+        nb_f = P[2]
+        list_f = P[3]
         c_tot += a[F][list_f[0]]
         for i in range(nb_f - 1):
             c_tot += a[list_f[i]][list_f[i + 1]]
         c_tot += a[list_f[nb_f - 1]][F + 1]
 
     return c_tot
+
+
+def verify_solution(Q, F, H, L_f, a, st_f, gr_C, tr_P):    
+    # Renvoie la marchandise que l'on attend du fournisseur f a la semaine s.
+    def march(f, s):
+        return L_f[f][1][s]
+    
+    # Les fournisseurs sous-traites ne sont declares qu'une fois.
+    assert len(st_f) == len(set(st_f))
+    for f in st_f:
+        assert f in range(F)
+    
+    # Les groupes sont de cardinal maximal 4, deux a deux disjoints,
+    # et l'union des groupes contient tous les elements non sous-traites.
+    if gr_C != []:
+        assert max([len(C) for C in gr_C]) <=4
+    elts_of_gr_C = [f for C in gr_C for f in C]
+    assert sorted(elts_of_gr_C) == sorted(list(set(elts_of_gr_C)))
+    for f in elts_of_gr_C:
+        assert f in range(F)
+    for f in range(F):
+        assert f in st_f or f in elts_of_gr_C
+    
+    # Les tournees visitent des elements d'un meme
+    # groupe, et le nb de marchandises chargees chez chaque fournisseur
+    # visite est specifie. Un element est visite au plus une fois par tournee,
+    # et n'est pas visite si le camion ne charge pas de marchandises chez lui.
+    # La capacite des camions est bien respectee.
+    for P in tr_P:
+        c = P[0]
+        s = P[1]
+        nb_f = P[2]
+        list_f = P[3]
+        list_q = P[4]
+        assert s in range(H)
+        assert nb_f == len(list_f)
+        assert nb_f == len(set(list_f))
+        assert nb_f == len(list_q)
+        for f in list_f:
+            assert f in range(F)
+            assert f in gr_C[c]
+            assert march(f, s) != 0
+        assert sum(list_q) <= Q
 
 
 def evaluate_solution(data_file_name, sol_file_name):
@@ -56,12 +99,14 @@ def evaluate_solution(data_file_name, sol_file_name):
         gr_C.append([int(line[i]) for i in range(5, len(line))])
     
     tr_P = []
+    ids_P = []
     for p in range(nb_P):
         line = lines[3 + nb_C + p].split()
-        tr_P.append([int(line[1]), int(line[3]), int(line[5]), int(line[7]), \
+        tr_P.append([int(line[3]), int(line[5]), int(line[7]), \
                   [int(line[i]) for i in range(9, len(line), 3)], \
                   [int(line[i]) for i in range(10, len(line), 3)]
                    ])
+        ids_P.append(int(line[1]))
     
     # Renvoie la marchandise que l'on attend du fournisseur f a la semaine s.
     def march(f, s):
@@ -92,13 +137,13 @@ def evaluate_solution(data_file_name, sol_file_name):
     # et n'est pas visite si le camion ne charge pas de marchandises chez lui.
     # La capacite des camions est bien respectee.
     assert nb_P == len(tr_P)
-    assert list(range(nb_P)) == sorted([P[0] for P in tr_P])
+    assert list(range(nb_P)) == sorted([i for i in ids_P])
     for P in tr_P:
-        c = P[1]
-        s = P[2]
-        nb_f = P[3]
-        list_f = P[4]
-        list_q = P[5]
+        c = P[0]
+        s = P[1]
+        nb_f = P[2]
+        list_f = P[3]
+        list_q = P[4]
         assert s in range(H)
         assert nb_f == len(list_f)
         assert nb_f == len(set(list_f))
@@ -115,9 +160,9 @@ def evaluate_solution(data_file_name, sol_file_name):
         for f in range(H):
             march_tot_fs = 0
             for P in tr_P:
-                s_P = P[2]
-                list_f = P[4]
-                list_q = P[5]
+                s_P = P[1]
+                list_f = P[3]
+                list_q = P[4]
                 if s_P == s and f in list_f:
                     i = list_f.index(f)
                     march_tot_fs += list_q[i]

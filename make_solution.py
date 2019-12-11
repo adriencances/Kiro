@@ -11,7 +11,7 @@ import itertools as it
 import operator as op
 import random as rd
 from get_data import get_data
-from evaluate_solution import evaluate_solution, cost_solution
+from evaluate_solution import evaluate_solution, cost_solution, verify_solution
 
 #data_file_name = "Instance-plus-propre.csv"
 data_file_name = "usine.csv"
@@ -229,42 +229,41 @@ def compute_solution(s1, threshold = -1):
                 nb_P_fs = int(march(f, s)/Q) + 1
                 for i in range(nb_P_fs - 1):
                     C_tournees_pleines += cost_tr([f])
-                    tr_P.append([nb_P_tot + i, c, s, 1, [f], [Q]])
+                    tr_P.append([c, s, 1, [f], [Q]])
                 if march(f, s)%Q != 0:
-                    tr_P.append([nb_P_tot + nb_P_fs - 1, c, s, 1, [f], [march(f, s)%Q]])
+                    tr_P.append([c, s, 1, [f], [march(f, s)%Q]])
                     nb_P_tot += 1
                 nb_P_tot += nb_P_fs - 1
             elif sum([march(f, s) for f in C]) != 0:
                 for f in C:
                     for i in range(march(f, s)//Q):
                         C_tournees_pleines += cost_tr([f])
-                        tr_P.append([nb_P_tot + i, c, s, 1, [f], [Q]])
+                        tr_P.append([c, s, 1, [f], [Q]])
                     nb_P_tot += march(f, s)//Q
                 if sum([residual(f, s) for f in C]) != 0:
                     ens_tournees = best_tournees_residuals(C, s)
                     for route in ens_tournees:
-                        tr_P.append([nb_P_tot, c, s, len(route), [f for f in route],
+                        tr_P.append([c, s, len(route), [f for f in route],
                                      [residual(f, s) for f in route]])
                         nb_P_tot += 1
                         if sum([residual(f, s) for f in route]) == Q:
                             C_tournees_pleines += cost_tr(route)
     
-    
+
 #    print("Nb de fournisseurs sous-traites :", len(st_f))
 #    print("Nb de groupes :", len(gr_C))
 #    print("Nb de groupes non singletons :", len([C for C in gr_C if len(C) > 1]))
 #    print("Cout des tournees pleines :", C_tournees_pleines)
+
     gr_C_non_sing = []
     for C in gr_C:
         if len(C) > 1:
             gr_C_non_sing.append(C)
-    print("Cardinal moyen des groupes non singleton:",
-          sum([len(C) for C in gr_C_non_sing]) / len(gr_C_non_sing))
+#    print("Cardinal moyen des groupes non singleton:",
+#          sum([len(C) for C in gr_C_non_sing]) / len(gr_C_non_sing))
     
     return st_f, gr_C, tr_P
     
-
-
 
 def print_solution(st_f, gr_C, tr_P, sol_file_name):
     file = open(sol_file_name, "w")
@@ -282,28 +281,19 @@ def print_solution(st_f, gr_C, tr_P, sol_file_name):
         file.write("C " + str(c) + " n " + str(len(C)) + " f " + " ".join([str(f) for f in C]) + "\n")
 
     # Ecriture des tournees
-    for P in tr_P:
-        num_P = P[0]
-        c = P[1]
-        s = P[2]
-        nb_f = P[3]
-        list_f = P[4]
-        list_q = P[5]
-        file.write("P " + str(num_P)
+    for id_P, P in enumerate(tr_P):
+        c = P[0]
+        s = P[1]
+        nb_f = P[2]
+        list_f = P[3]
+        list_q = P[4]
+        file.write("P " + str(id_P)
                         + " g " + str(c) + " s " + str(s)
                         + " n " + str(nb_f) + " "
                         + " ".join(["f " + str(list_f[i]) + " "
                         + str(list_q[i]) for i in range(nb_f)]) + "\n")
 
     file.close()
-
-
-
-
-st_f, gr_C, tr_P = compute_solution(0)
-print(cost_solution(Q, F, H, L_f, a, st_f, gr_C, tr_P))
-#print_solution(st_f, gr_C, tr_P, "solution.txt")
-#print(evaluate_solution(data_file_name, "solution.txt"))
 
 
 
