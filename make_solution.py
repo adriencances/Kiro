@@ -66,10 +66,10 @@ def generate_sets(C):
 
 
 def should_st(f):
-#    app_min_cost = sum([(a[F][f] + a[f][F + 1]) * m.ceil(march(f, s)/Q) for s in range(H)])
-    app_min_cost = sum([(a[F][f] + a[f][F + 1]) * m.floor(march(f, s)/Q) for s in range(H)])
+#    appr_min_cost = sum([(a[F][f] + a[f][F + 1]) * m.ceil(march(f, s)/Q) for s in range(H)])
+    appr_min_cost = sum([(a[F][f] + a[f][F + 1]) * m.floor(march(f, s)/Q) for s in range(H)])
 #    if app_min_cost + 5000 >= cost_st(f):
-    if app_min_cost >= cost_st(f):
+    if appr_min_cost >= cost_st(f):
         return True
     return False
 
@@ -186,10 +186,12 @@ def compute_solution(s1, threshold = -1):
     # Calcul des groupes selon la semaine s1
     gr_C = []
     f_traites = [False for f in range(F)]
+    for f in st_f:
+        f_traites[f] = True
     
 #    for f in random_permutation(F):
     for f in range(F):
-        if not f_traites[f] and not f in st_f:
+        if not f_traites[f]:
             f_traites[f] = True
             if residual(f, s1) == 0:
                 gr_C.append([f])
@@ -197,8 +199,7 @@ def compute_solution(s1, threshold = -1):
                 C = [f]
                 residual_sum = residual(f, s1)
                 dist_to_f = [(f_v, a[f][f_v]) \
-                             for f_v in range(F) if not f_traites[f_v] \
-                             and not f_v in st_f]
+                             for f_v in range(F) if not f_traites[f_v]]
                 dist_to_f = sorted(dist_to_f, key = op.itemgetter(1))
                 for f_v, dist in dist_to_f:
                     if (not f_traites[f_v] and 0 <= dist < threshold
