@@ -201,13 +201,14 @@ st_f_1, gr_C_1, tr_P_1 = alter_solution(st_f_0, gr_C_0, tr_P_0)
 verify_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
 
 nb_iter = 10000
-param = 1
+param = 2*10**6 # 10**7
 for i in range(nb_iter):
     st_f_1, gr_C_1, tr_P_1 = alter_solution(st_f_0, gr_C_0, tr_P_0, i)
     verify_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
     cost_1 = cost_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
-    
-    if cost_1 < cost or m.exp(-(cost_1 - cost)/param):
+#    print(m.exp(-(cost_1 - cost)/param))
+#    if cost_1 < cost or rd.uniform(0,1) < m.exp(-(cost_1 - cost)/param):
+    if cost_1 < cost:
         st_f_0 = st_f_1.copy()
         gr_C_0 = [C.copy() for C in gr_C_1]
         tr_P_0 = [[P[0], P[1], P[2], P[3].copy(), P[4].copy()] for P in tr_P_1]
@@ -216,6 +217,7 @@ for i in range(nb_iter):
     
     if i == 100:
         print("Limite")
+
 
 
 
