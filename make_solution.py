@@ -61,22 +61,14 @@ def cost_st_gr(C):
     return sum([L_f[f][0] for f in C])
 
 
-def usines_in(x1, x2, y1, y2, s):
-    L = []
-    M = []
-    for f in range(F):
-        if x1 <= coords(f)[0] <= x2 and y1 <= coords(f)[1] <= y2:
-            L.append(f)
-            M.append(march(f, s))
-    return L, M
-
-
 def generate_sets(C):
     return list(it.permutations(C))
 
 
 def should_st(f):
-    app_min_cost = sum([(a[F][f] + a[f][F + 1]) * m.ceil(march(f, s)/Q) for s in range(H)])
+#    app_min_cost = sum([(a[F][f] + a[f][F + 1]) * m.ceil(march(f, s)/Q) for s in range(H)])
+    app_min_cost = sum([(a[F][f] + a[f][F + 1]) * m.floor(march(f, s)/Q) for s in range(H)])
+#    if app_min_cost + 5000 >= cost_st(f):
     if app_min_cost >= cost_st(f):
         return True
     return False
@@ -175,9 +167,9 @@ def close_neighbors(dist):
 
 
 
-
-
-
+def immediate_neighbors():
+    return [(f1, f2) for f1 in range(F) for f2 in range(F)
+            if f1 != f2 and a[f1][f2] == 0]
 
 
 
@@ -194,6 +186,7 @@ def compute_solution(s1, threshold = -1):
     # Calcul des groupes selon la semaine s1
     gr_C = []
     f_traites = [False for f in range(F)]
+    
 #    for f in random_permutation(F):
     for f in range(F):
         if not f_traites[f] and not f in st_f:
