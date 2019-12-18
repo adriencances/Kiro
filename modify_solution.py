@@ -11,7 +11,7 @@ import itertools as it
 import operator as op
 import random as rd
 from get_data import get_data
-from evaluate_solution import evaluate_solution, cost_solution, verify_solution
+from evaluate_solution import read_solution, evaluate_solution, cost_solution, verify_solution
 from make_solution import (Q, F, H, L_f, a,
                            march, cost_st, cost_tr, cost_ens_tr, residual, best_tournees_residuals,
                            compute_solution, print_solution)
@@ -148,12 +148,24 @@ def unst_element(st_f, gr_C, tr_P):
     gr_C.append([f0])
     add_tr_of_groups([len(gr_C) - 1], gr_C, tr_P)
 
+def unst_element_and_add_to_a_group(st_f, gr_C, tr_P):
+    non_max_filled_groups = [c for c in range(len(gr_C)) if len(gr_C[c]) < 4]
+    if st_f == [] or non_max_filled_groups == []:
+        return
+    f0 = rd.choice(st_f)
+    st_f.remove(f0)
+    c0 = rd.choice(non_max_filled_groups)
+    gr_C[c0].append(f0)
+    remove_tr_of_groups([c0], tr_P)
+    add_tr_of_groups([c0], gr_C, tr_P)
 
 
 def alter_solution(st_f_0, gr_C_0, tr_P_0, countor = 0):
     st_f, gr_C, tr_P = copy_of_solution(st_f_0, gr_C_0, tr_P_0)
     
-    case = rd.randint(0, 5)
+    case = rd.randint(0, 6)
+    
+    
     
 #    if countor < 100:
 #        case = rd.randint(0, 1)
@@ -183,40 +195,84 @@ def alter_solution(st_f_0, gr_C_0, tr_P_0, countor = 0):
     # de-sous-traite un elememt si possible
     elif case == 5:
         unst_element(st_f, gr_C, tr_P)
+    
+    # de-sous-traite un elememt et l'ajoute a un groupe deja existant (si possible)
+    elif case == 6:
+        unst_element_and_add_to_a_group(st_f, gr_C, tr_P)
 
     return st_f, gr_C, tr_P
 
 
-                
+alpha = 0.5
+T = 10**7
 
-
-
-
-st_f_0, gr_C_0, tr_P_0 = compute_solution(0)
+st_f_0, gr_C_0, tr_P_0 = read_solution("solution_best.txt")
+#st_f_0, gr_C_0, tr_P_0 = compute_solution(0)
 verify_solution(Q, F, H, L_f, a, st_f_0, gr_C_0, tr_P_0)
-cost = cost_solution(Q, F, H, L_f, a, st_f_0, gr_C_0, tr_P_0)
-print(cost)
+cost_0 = cost_solution(Q, F, H, L_f, a, st_f_0, gr_C_0, tr_P_0)
+cost_1 = cost_0
+print(cost_0)
 
-st_f_1, gr_C_1, tr_P_1 = alter_solution(st_f_0, gr_C_0, tr_P_0)
-verify_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
+st_f_1, gr_C_1, tr_P_1 = copy_of_solution(st_f_0, gr_C_0, tr_P_0)
 
-nb_iter = 10000
-param = 2*10**6 # 10**7
+nb_iter = 100
 for i in range(nb_iter):
-    st_f_1, gr_C_1, tr_P_1 = alter_solution(st_f_0, gr_C_0, tr_P_0, i)
-    verify_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
-    cost_1 = cost_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
-#    print(m.exp(-(cost_1 - cost)/param))
-#    if cost_1 < cost or rd.uniform(0,1) < m.exp(-(cost_1 - cost)/param):
-    if cost_1 < cost:
-        st_f_0 = st_f_1.copy()
-        gr_C_0 = [C.copy() for C in gr_C_1]
-        tr_P_0 = [[P[0], P[1], P[2], P[3].copy(), P[4].copy()] for P in tr_P_1]
-        cost = cost_1
-        print(cost)
-    
-    if i == 100:
-        print("Limite")
+    for j in range(10):
+        if cost_1 < cost_0:
+            st_f_0, gr_C_0, tr_P_0 = copy_of_solution(st_f_1, gr_C_1, tr_P_1)
+            cost_0 = cost_1
+        print(cost_1)
+        st_f_2, gr_C_2, tr_P_2 = alter_solution(st_f_1, gr_C_1, tr_P_1)
+        cost_2 = cost_solution(Q, F, H, L_f, a, st_f_2, gr_C_2, tr_P_2)
+        if cost_2 < cost_1:
+            st_f_1, gr_C_1, tr_P_1 = copy_of_solution(st_f_2, gr_C_2, tr_P_2)
+            cost_1 = cost_2
+        elif rd.uniform(0,1) < m.exp(-(cost_2 - cost_1)/T):
+            st_f_1, gr_C_1, tr_P_1 = copy_of_solution(st_f_2, gr_C_2, tr_P_2)
+            cost_1 = cost_2
+            print(" " * 20, True)
+    T = alpha * T
+
+# x^b = sol_0
+# x = sol_1
+# x' = sol_2
+
+
+
+
+
+
+         
+
+
+
+
+#st_f_0, gr_C_0, tr_P_0 = compute_solution(0)
+#verify_solution(Q, F, H, L_f, a, st_f_0, gr_C_0, tr_P_0)
+#cost = cost_solution(Q, F, H, L_f, a, st_f_0, gr_C_0, tr_P_0)
+#print(cost)
+#
+#st_f_1, gr_C_1, tr_P_1 = alter_solution(st_f_0, gr_C_0, tr_P_0)
+#verify_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
+#
+#nb_iter = 10000
+#param = 2*10**6 # 10**7
+#for i in range(nb_iter):
+#    st_f_1, gr_C_1, tr_P_1 = alter_solution(st_f_0, gr_C_0, tr_P_0, i)
+#    verify_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
+#    cost_1 = cost_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
+##    print(m.exp(-(cost_1 - cost)/param))
+##    if cost_1 < cost or rd.uniform(0,1) < m.exp(-(cost_1 - cost)/param):
+#    if cost_1 < cost:
+#        st_f_0 = st_f_1.copy()
+#        gr_C_0 = [C.copy() for C in gr_C_1]
+#        tr_P_0 = [[P[0], P[1], P[2], P[3].copy(), P[4].copy()] for P in tr_P_1]
+#        cost = cost_1
+#        print(cost)
+##        print_solution(st_f_0, gr_C_0, tr_P_0, "solution.txt")
+#    
+#    if i == 100:
+#        print("Limite")
 
 
 
@@ -269,7 +325,6 @@ def estimate_lower_bound():
 def immediate_neighbors(dist = 0):
     return [(f1, f2) for f1 in range(F) for f2 in range(F)
             if f1 != f2 and a[f1][f2] <= dist]
-
 
 def three_sets_immediate_neighbors(dist = 0):
     return [(f1, f2, f3) for f1, f2, f3 in it.combinations(range(F), 3) if

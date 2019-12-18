@@ -9,6 +9,36 @@ Created on Thu Nov 28 22:13:07 2019
 from get_data import get_data
 
 
+
+def read_solution(sol_file_name):
+    # On ouvre le fichier solution pour recupere la solution.
+    file = open(sol_file_name, 'r')
+    lines = file.read().splitlines()
+    
+    x_line = lines[0].split()
+    st_f = [int(x_line[i]) for i in range(3, len(x_line))]
+    
+    y_line = lines[1].split()
+    nb_P = int(y_line[1])
+    
+    z_line = lines[2].split()
+    nb_C = int(z_line[1])
+    
+    gr_C = []
+    for c in range(nb_C):
+        line = lines[3 + c].split()
+        gr_C.append([int(line[i]) for i in range(5, len(line))])
+    
+    tr_P = []
+    for p in range(nb_P):
+        line = lines[3 + nb_C + p].split()
+        tr_P.append([int(line[3]), int(line[5]), int(line[7]), \
+                  [int(line[i]) for i in range(9, len(line), 3)], \
+                  [int(line[i]) for i in range(10, len(line), 3)]
+                   ])
+
+    return st_f, gr_C, tr_P
+
 def cost_solution(Q, F, H, L_f, a, st_f, gr_C, tr_P):
     # Renvoie le cout de sous-traitance pour le fournisseur F.
     def c_st(f):
