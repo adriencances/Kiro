@@ -66,8 +66,9 @@ def generate_sets(C):
 
 
 def should_st(f):
-    appr_min_cost = sum([(a[F][f] + a[f][F + 1]) * m.ceil(march(f, s)/Q) for s in range(H)])
+#    appr_min_cost = sum([(a[F][f] + a[f][F + 1]) * m.ceil(march(f, s)/Q) for s in range(H)])
 #    appr_min_cost = sum([(a[F][f] + a[f][F + 1]) * m.floor(march(f, s)/Q) for s in range(H)])
+    appr_min_cost = sum([(a[F][f] + a[f][F + 1]) * (m.floor(march(f, s)/Q) + 0.2) for s in range(H)])
     if appr_min_cost >= cost_st(f):
         return True
     return False
@@ -248,17 +249,19 @@ def compute_solution(s1, threshold = -1):
                 gr_C.append([f])
             else:
                 C = [f]
-                residual_sum = residual(f, s1)
+#                residual_sum = residual(f, s1)
                 dist_to_f = [(f_v, a[f][f_v]) \
                              for f_v in range(F) if not f_traites[f_v]]
                 dist_to_f = sorted(dist_to_f, key = op.itemgetter(1))
                 for f_v, dist in dist_to_f:
+#                    if (not f_traites[f_v] and 0 <= dist < threshold
+#                        and residual(f_v, s1) > 0
+#                        and residual_sum + residual(f_v, s1) <= Q):
                     if (not f_traites[f_v] and 0 <= dist < threshold
-                        and residual(f_v, s1) > 0
-                        and residual_sum + residual(f_v, s1) <= Q):
+                        and residual(f_v, s1) > 0):
                         C.append(f_v)
                         f_traites[f_v] = True
-                        residual_sum += residual(f_v, s1)
+#                        residual_sum += residual(f_v, s1)
                     if len(C) == 4:
                         break
                 gr_C.append(C)
