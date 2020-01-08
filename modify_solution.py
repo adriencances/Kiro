@@ -50,47 +50,63 @@ def add_tr_of_groups_proportional(ids_gr_C, gr_C, tr_P):
     for c in ids_gr_C:
         C = gr_C[c]
         for s in range(H):
-            set_of_f_lists_q_lists = best_tournees_residuals_proportional(C, s)
-            for f_list, q_list in set_of_f_lists_q_lists:
-                tr_P.append([c, s, len(f_list), f_list, q_list])
+            if len(C) == 1:
+                f = C[0]
+                nb_P_fs = int(march(f, s)/Q) + 1
+                for i in range(nb_P_fs - 1):
+                    tr_P.append([c, s, 1, [f], [Q]])
+                if march(f, s)%Q != 0:
+                    tr_P.append([c, s, 1, [f], [march(f, s)%Q]])
+            elif sum([march(f, s) for f in C]) != 0:
+                for f in C:
+                    for i in range(march(f, s)//Q):
+                        tr_P.append([c, s, 1, [f], [Q]])
+                if sum([residual(f, s) for f in C]) != 0:
+                    set_of_f_lists_q_lists = best_tournees_residuals_proportional(C, s)
+                    for f_list, q_list in set_of_f_lists_q_lists:
+                        tr_P.append([c, s, len(f_list), f_list, q_list])
 
 
 def add_tr_of_groups_best_method(ids_gr_C, gr_C, tr_P):
     for c in ids_gr_C:
         C = gr_C[c]
         for s in range(H):
-            
-            # method 1
-            tr_C_1 = []
-            set_of_f_lists_q_lists = best_tournees_residuals_proportional(C, s)
-            for f_list, q_list in set_of_f_lists_q_lists:
-                tr_C_1.append([c, s, len(f_list), f_list, q_list])
-                
-            # method 2
-            tr_C_2 = []
             if len(C) == 1:
                 f = C[0]
                 nb_P_fs = int(march(f, s)/Q) + 1
                 for i in range(nb_P_fs - 1):
-                    tr_C_2.append([c, s, 1, [f], [Q]])
+                    tr_P.append([c, s, 1, [f], [Q]])
                 if march(f, s)%Q != 0:
-                    tr_C_2.append([c, s, 1, [f], [march(f, s)%Q]])
+                    tr_P.append([c, s, 1, [f], [march(f, s)%Q]])
             elif sum([march(f, s) for f in C]) != 0:
                 for f in C:
                     for i in range(march(f, s)//Q):
-                        tr_C_2.append([c, s, 1, [f], [Q]])
+                        tr_P.append([c, s, 1, [f], [Q]])
+            
+                # method 1
+                tr_C_1 = []
+                set_of_f_lists_q_lists = best_tournees_residuals_proportional(C, s)
+                for f_list, q_list in set_of_f_lists_q_lists:
+                    tr_C_1.append([c, s, len(f_list), f_list, q_list])
+                    
+                # method 2
+                tr_C_2 = []
                 if sum([residual(f, s) for f in C]) != 0:
                     ens_tournees = best_tournees_residuals(C, s)
                     for route in ens_tournees:
                         tr_C_2.append([c, s, len(route), [f for f in route],
                                      [residual(f, s) for f in route]])
-            
-            cost_1 = cost_ens_tr([P[-2] for P in tr_C_1])
-            cost_2 = cost_ens_tr([P[-2] for P in tr_C_2])
-            if cost_2 < cost_1:
-                tr_P = tr_P + tr_C_2
-            else:
-                tr_P = tr_P + tr_C_1
+                
+                cost_1 = cost_ens_tr([P[-2] for P in tr_C_1])
+                cost_2 = cost_ens_tr([P[-2] for P in tr_C_2])
+                if cost_2 < cost_1:
+    #                tr_P = tr_P + tr_C_2
+                    for P in tr_C_2:
+                        tr_P.append(P)
+                else:
+    #                tr_P = tr_P + tr_C_1
+                    for P in tr_C_1:
+                        tr_P.append(P)
 
 
 def remove_tr_of_groups(ids_gr_C, tr_P):
@@ -106,6 +122,8 @@ def shift_indices(c, tr_P):
     for i in range(len(tr_P)):
         if tr_P[i][0] > c:
             tr_P[i][0] -= 1
+
+
 
 
 def swap_two_elements(gr_C, tr_P):
@@ -293,8 +311,8 @@ def alter_solution(st_f_0, gr_C_0, tr_P_0, countor = 0):
 
 
 
-#st_f_0, gr_C_0, tr_P_0 = read_solution("solution_best.txt")
-st_f_0, gr_C_0, tr_P_0 = compute_solution(0)
+st_f_0, gr_C_0, tr_P_0 = read_solution("solution_best.txt")
+#st_f_0, gr_C_0, tr_P_0 = compute_solution(0)
 verify_solution(Q, F, H, L_f, a, st_f_0, gr_C_0, tr_P_0)
 cost = cost_solution(Q, F, H, L_f, a, st_f_0, gr_C_0, tr_P_0)
 print(cost)

@@ -115,25 +115,25 @@ def best_tournees_residuals(C, s):
 
 
 def last_residual(f, s, d_tot):
-    return march(f, s) - d_tot//Q * m.floor(march(f, s)/d_tot*Q)
+    return residual(f, s) - d_tot//Q * m.floor(residual(f, s)/d_tot*Q)
 
 
 def best_tournees_residuals_proportional(C, s):
-    C_eff = [f for f in C if march(f, s) != 0]
+    C_eff = [f for f in C if residual(f, s) != 0]
     if C_eff == []:
         return []
-    d_tot = sum([march(f, s) for f in C_eff])
+    d_tot = sum([residual(f, s) for f in C_eff])
     
     set_of_f_lists_q_lists = []
     
-    orders_costs = [(order, cost_tr(order)) for order in it.permutations(C_eff)]
+    orders_costs = [(list(order), cost_tr(order)) for order in it.permutations(C_eff)]
     best_order = min(orders_costs, key = op.itemgetter(1))[0]
     
     for i in range(d_tot//Q):
         set_of_f_lists_q_lists.append([ best_order, 
-                                       [m.floor(march(f, s)/d_tot*Q) for f in best_order] ])
+                                       [m.floor(residual(f, s)/d_tot*Q) for f in best_order] ])
     
-    last_residuals = [march(f, s) - d_tot//Q * m.floor(march(f, s)/d_tot*Q) for f in C_eff]
+    last_residuals = [residual(f, s) - d_tot//Q * m.floor(residual(f, s)/d_tot*Q) for f in C_eff]
     
     C_eff_2 = [C_eff[i] for i in range(len(C_eff)) if last_residuals[i] > 0]
     
@@ -142,7 +142,7 @@ def best_tournees_residuals_proportional(C, s):
             for i in range(len(C_eff_2)):
                 set_of_f_lists_q_lists.append([ [C_eff[i]], [last_residuals[i]] ])
         else:
-            orders_costs_2 = [(order, cost_tr(order)) for order in it.permutations(C_eff_2)]
+            orders_costs_2 = [(list(order), cost_tr(order)) for order in it.permutations(C_eff_2)]
             best_order_2 = min(orders_costs_2, key = op.itemgetter(1))[0]
             
             set_of_f_lists_q_lists.append([ best_order_2,
