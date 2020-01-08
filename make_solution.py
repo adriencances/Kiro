@@ -79,6 +79,10 @@ def dist(f1, f2):
     coords_2 = coords(f2)
     return (coords_1[0] - coords_2[0])**2 + (coords_1[1] - coords_2[1])**2
 
+def dist_sq(A, B):
+    x1, y1 = A
+    x2, y2 = A
+    return (x1 - x2)**2 + (y1 - y2)**2
 
 def rapport(f, s):
     return march(f, s)/Q
@@ -208,12 +212,20 @@ def close_neighbors(dist):
 
 
 
-    
+# Coordonnees du fournisseur f en prenant le depot comme origine
+def coords_rel(f):
+    x, y = coords(f)
+    x0, y0 = coords(F)
+    return (x - x0, y - y0)
 
-
-
-
-
+def angle_val(f_1, f_2):
+    x1, y1 = coords_rel(f_1)
+    x2, y2 = coords_rel(f_2)
+    scalar_product = x1*x2 + y1*y2
+    norm_1 = (x1**2 + y1**2)**(0.5)
+    norm_2 = (x2**2 + y2**2)**(0.5)
+    ratio = min(abs(scalar_product/(norm_1*norm_2)), 1)
+    return m.acos(ratio)
 
 
 
@@ -225,10 +237,7 @@ def immediate_neighbors():
 
 
 
-def compute_solution(s1, threshold = -1):
-    if threshold == -1:
-        dist_max = max([a[i][j] for i in range(F+1) for j in range(F+1)])
-        threshold = dist_max + 1
+def compute_solution(s1):
     
     C_tournees_pleines = 0
     
@@ -240,28 +249,78 @@ def compute_solution(s1, threshold = -1):
     f_traites = [False for f in range(F)]
     for f in st_f:
         f_traites[f] = True
-    
-#    for f in random_permutation(F):
-    for f in range(F):
-        if not f_traites[f]:
-            f_traites[f] = True
-            if residual(f, s1) == 0:
-                gr_C.append([f])
-            else:
+
+        
+    new_method = True
+#    if new_method:
+#        for f in range(F):
+#            if not f_traites[f]:
+#                f_traites[f] = True
+#                C = [f]
+#                
+#                angles = [(f_v, angle_val(f, f_v)) for f_v in range(F) if not f_traites[f_v]]
+#                angles = sorted(angles, key = op.itemgetter(1))
+#
+#                for f_v, angle in angles[:1]:
+#                    if (not f_traites[f_v]):
+#                        C.append(f_v)
+#                        f_traites[f_v] = True
+#                gr_C.append(C)
+    if new_method:
+        f = 0
+        nb_groups = m.ceil((F - len(st_f))/4)
+        gr_C = [[] for c in range(nb_groups)]
+        
+        nb_traites_non_st = 0
+        c = 0
+        for f in range(F):
+            if not f_traites[f]:
+                gr_C[c].append(f)
+                f_traites[f] = True
+                nb_traites_non_st += 1
+                dist_to_f = [(f_v, a[f][f_v]) \
+                                 for f_v in range(F) if not f_traites[f_v]]
+                dist_to_f = sorted(dist_to_f, key = op.itemgetter(1))
+                f_v, dist = dist_to_f[0]
+                gr_C[c].append(f_v)
+                f_traites[f_v] = True
+                nb_traites_non_st += 1
+                c += 1
+                if c == nb_groups:
+                    break
+        
+        print(nb_traites_non_st, nb_groups)
+        
+        for i in range(3):
+            for c in range(nb_groups):
+                C = gr_C[c]
+                if len(C) == 4:
+                    continue
+                x_bary = sum([coords(f)[0] for f in C])/len(C)
+                y_bary = sum([coords(f)[1] for f in C])/len(C)
+                coords_bary = (x_bary, y_bary)
+                dist_to_C = [(f_v, dist_sq(coords(f_v), coords_bary)) \
+                                 for f_v in range(F) if not f_traites[f_v]]
+                dist_to_C = sorted(dist_to_C, key = op.itemgetter(1))
+                if dist_to_C != []:
+                    f_v, dist = dist_to_C[0]
+                    C.append(f_v)
+                    f_traites[f_v] = True
+                    nb_traites_non_st += 1
+        print(nb_traites_non_st)
+
+    else:
+        for f in range(F):
+            if not f_traites[f]:
+                f_traites[f] = True
                 C = [f]
-#                residual_sum = residual(f, s1)
                 dist_to_f = [(f_v, a[f][f_v]) \
                              for f_v in range(F) if not f_traites[f_v]]
                 dist_to_f = sorted(dist_to_f, key = op.itemgetter(1))
                 for f_v, dist in dist_to_f:
-#                    if (not f_traites[f_v] and 0 <= dist < threshold
-#                        and residual(f_v, s1) > 0
-#                        and residual_sum + residual(f_v, s1) <= Q):
-                    if (not f_traites[f_v] and 0 <= dist < threshold
-                        and residual(f_v, s1) > 0):
+                    if not f_traites[f_v]:
                         C.append(f_v)
                         f_traites[f_v] = True
-#                        residual_sum += residual(f_v, s1)
                     if len(C) == 4:
                         break
                 gr_C.append(C)
