@@ -100,6 +100,25 @@ def verify_solution(Q, F, H, L_f, a, st_f, gr_C, tr_P):
             assert f in gr_C[c]
             assert march(f, s) != 0
         assert sum(list_q) <= Q
+    
+    # On recupere exactement le nombre de marchandises demande chaque semaine
+    # aupres de chaque fournisseur.
+    for s in range(H):
+        for f in range(H):
+            march_tot_fs = 0
+            for P in tr_P:
+                s_P = P[1]
+                list_f = P[3]
+                list_q = P[4]
+                if s_P == s and f in list_f:
+                    i = list_f.index(f)
+                    march_tot_fs += list_q[i]
+            if f in st_f:
+                assert march_tot_fs == 0
+            else:
+                if march_tot_fs != march(f, s):
+                    print("f", f, "s", s)
+                assert march_tot_fs == march(f, s)
 
 
 def evaluate_solution(data_file_name, sol_file_name):

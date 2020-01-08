@@ -66,9 +66,8 @@ def generate_sets(C):
 
 
 def should_st(f):
-#    appr_min_cost = sum([(a[F][f] + a[f][F + 1]) * m.ceil(march(f, s)/Q) for s in range(H)])
-    appr_min_cost = sum([(a[F][f] + a[f][F + 1]) * m.floor(march(f, s)/Q) for s in range(H)])
-#    if app_min_cost + 5000 >= cost_st(f):
+    appr_min_cost = sum([(a[F][f] + a[f][F + 1]) * m.ceil(march(f, s)/Q) for s in range(H)])
+#    appr_min_cost = sum([(a[F][f] + a[f][F + 1]) * m.floor(march(f, s)/Q) for s in range(H)])
     if appr_min_cost >= cost_st(f):
         return True
     return False
@@ -82,26 +81,6 @@ def dist(f1, f2):
 
 def rapport(f, s):
     return march(f, s)/Q
-
-
-def optimal_route_bis(C):
-    possible_routes = [
-            (sum([a[perm_C[i]][perm_C[i + 1]] for i in range(len(C) - 1)]) + a[perm_C[-1]][F + 1],
-             perm_C)
-            for perm_C in it.permutations(C)]
-    best_perm_C = min(possible_routes, key=op.itemgetter(0))[1]
-    return best_perm_C
-
-
-def optimal_route(C, s):
-    f_visit = [f for f in C if march(f, s)%Q != 0]
-    possible_routes = \
-    [(sum([ a[perm[i]][perm[i + 1]] for i in range(len(perm) - 1) ]) + a[perm[-1]][F + 1],
-      perm)
-    for perm in it.permutations(f_visit)
-    ]
-    best_perm = min(possible_routes, key=op.itemgetter(0))[1]
-    return best_perm
 
 
 def residual(f, s):
@@ -133,6 +112,78 @@ def best_tournees_residuals(C, s):
              tr_P_admissible(tr_P, s)]
     best_tr_P = min(costs, key = op.itemgetter(1))[0]
     return best_tr_P
+
+
+def last_residual(f, s, d_tot):
+    return march(f, s) - d_tot//Q * m.floor(march(f, s)/d_tot*Q)
+
+
+def best_tournees_residuals_proportional(C, s):
+    C_eff = [f for f in C if march(f, s) != 0]
+    if C_eff == []:
+        return []
+    d_tot = sum([march(f, s) for f in C_eff])
+    
+    set_of_f_lists_q_lists = []
+    
+    orders_costs = [(order, cost_tr(order)) for order in it.permutations(C_eff)]
+    best_order = min(orders_costs, key = op.itemgetter(1))[0]
+    
+    for i in range(d_tot//Q):
+        set_of_f_lists_q_lists.append([ best_order, 
+                                       [m.floor(march(f, s)/d_tot*Q) for f in best_order] ])
+    
+    last_residuals = [march(f, s) - d_tot//Q * m.floor(march(f, s)/d_tot*Q) for f in C_eff]
+    
+    C_eff_2 = [C_eff[i] for i in range(len(C_eff)) if last_residuals[i] > 0]
+    
+    if C_eff_2 != []:
+        if sum(last_residuals) > Q:
+            for i in range(len(C_eff_2)):
+                set_of_f_lists_q_lists.append([ [C_eff[i]], [last_residuals[i]] ])
+        else:
+            orders_costs_2 = [(order, cost_tr(order)) for order in it.permutations(C_eff_2)]
+            best_order_2 = min(orders_costs_2, key = op.itemgetter(1))[0]
+            
+            set_of_f_lists_q_lists.append([ best_order_2,
+                                           [last_residual(f, s, d_tot) for f in best_order_2] ])
+
+    return set_of_f_lists_q_lists
+
+
+def compare_methods(gr_C):
+    for s in range(H):
+        for c in range(len(gr_C)):
+            C = gr_C[c]
+            tr_P_1 = []
+            tr_P_2 = []
+            ens_tournees = best_tournees_residuals(C, s)
+            for route in ens_tournees:
+                tr_P_1.append([c, s, len(route), [f for f in route],
+                             [residual(f, s) for f in route]])
+            set_of_f_lists_q_lists = best_tournees_residuals_proportional(C, s)
+            for f_list, q_list in set_of_f_lists_q_lists:
+                tr_P_2.append([c, s, len(f_list), f_list, q_list])
+            cost_1 = cost_ens_tr([P[-2] for P in tr_P_1])
+            cost_2 = cost_ens_tr([P[-2] for P in tr_P_2])
+            if cost_2 < cost_1:
+                print(c, s)
+                print(cost_1)
+                print(cost_2)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 def get_interesting_triplets():
@@ -178,7 +229,7 @@ def compute_solution(s1, threshold = -1):
         dist_max = max([a[i][j] for i in range(F+1) for j in range(F+1)])
         threshold = dist_max + 1
     
-    C_tournees_pleines = 0    
+    C_tournees_pleines = 0
     
     # Calcul des fournisseurs sous-traites
     st_f = [f for f in range(F) if should_st(f)]
@@ -215,6 +266,14 @@ def compute_solution(s1, threshold = -1):
     # Calcul des tournees
     tr_P = []
     nb_P_tot = 0
+
+#    for c in range(len(gr_C)):
+#        C = gr_C[c]
+#        for s in range(H):
+#            set_of_f_lists_q_lists = best_tournees_residuals_proportional(C, s)
+#            for f_list, q_list in set_of_f_lists_q_lists:
+#                tr_P.append([c, s, len(f_list), f_list, q_list])
+
     for c in range(len(gr_C)):
         C = gr_C[c]
         for s in range(H):
