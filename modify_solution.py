@@ -257,12 +257,42 @@ def three_permute(st_f, gr_C, tr_P):
     add_tr_of_groups_best_method([c1, c2, c3], gr_C, tr_P)
 
 
-def alter_solution(st_f_0, gr_C_0, tr_P_0, countor = 0):
+
+
+
+# ATTENTION : C1 et C2 doivent tous deux etre de cardinal 4
+def find_best_permut_in_groups(c1, c2, gr_C, tr_P):
+    assert c1 != c2 and len(gr_C[c1]) == 4 and len(gr_C[c2]) == 4
+    elts = gr_C[c1] + gr_C[c2]
+    possible_C1s = list(it.combinations(elts, 4))
+    list_of_new_C1_tr_P = []
+    for C1 in possible_C1s:
+        list_of_new_C1_tr_P.append([C1,[]])
+        C2 = [f for f in elts if not f in C1]
+        add_tr_of_groups_best_method([0, 1], [C1, C2], list_of_new_C1_tr_P[-1][1])
+    all_costs = [(C1, cost_ens_tr([P[-2] for P in new_tr_P])) \
+                 for C1, new_tr_P in list_of_new_C1_tr_P]
+    C1 = list(min(all_costs, key = op.itemgetter(1))[0])
+    C2 = [f for f in elts if not f in C1]
+    gr_C[c1] = C1
+    gr_C[c2] = C2
+    remove_tr_of_groups([c1, c2], tr_P)
+    add_tr_of_groups_best_method([c1, c2], gr_C, tr_P)
+    print("done")
+
+
+
+def alter_solution_new(st_f_0, gr_C_0, tr_P_0, c1, c2):
+    st_f, gr_C, tr_P = copy_of_solution(st_f_0, gr_C_0, tr_P_0)
+    find_best_permut_in_groups(c1, c2, gr_C, tr_P)
+    return st_f, gr_C, tr_P
+
+
+def alter_solution(st_f_0, gr_C_0, tr_P_0):
     st_f, gr_C, tr_P = copy_of_solution(st_f_0, gr_C_0, tr_P_0)
     
     case = rd.randint(0, 7)
-#    case = 7
-    
+    case = rd.choice([0, 7])
     
     
 #    if countor < 100:
@@ -320,25 +350,43 @@ print(cost)
 st_f_1, gr_C_1, tr_P_1 = alter_solution(st_f_0, gr_C_0, tr_P_0)
 verify_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
 
-nb_iter = 10000
-param = 2*10**6 # 10**7
-for i in range(nb_iter):
-    st_f_1, gr_C_1, tr_P_1 = alter_solution(st_f_0, gr_C_0, tr_P_0, i)
-    verify_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
-    cost_1 = cost_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
-#    print(m.exp(-(cost_1 - cost)/param))
-#    if cost_1 < cost or rd.uniform(0,1) < m.exp(-(cost_1 - cost)/param):
-    if cost_1 < cost:
-        st_f_0 = st_f_1.copy()
-        gr_C_0 = [C.copy() for C in gr_C_1]
-        tr_P_0 = [[P[0], P[1], P[2], P[3].copy(), P[4].copy()] for P in tr_P_1]
-        cost = cost_1
-        print(cost)
-#        print_solution(st_f_0, gr_C_0, tr_P_0, "solution.txt")
+for c1 in range(len(gr_C_1)):
+    for c2 in range(len(gr_C_1)):
+        if c1 != c2 and len(gr_C_1[c1]) == 4 and len(gr_C_1[c2]) == 4:
+            st_f_1, gr_C_1, tr_P_1 = alter_solution_new(st_f_0, gr_C_0, tr_P_0, c1, c2)
+            verify_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
+            cost_1 = cost_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
+            if cost_1 < cost:
+                st_f_0 = st_f_1.copy()
+                gr_C_0 = [C.copy() for C in gr_C_1]
+                tr_P_0 = [[P[0], P[1], P[2], P[3].copy(), P[4].copy()] for P in tr_P_1]
+                cost = cost_1
+                print(cost)
+
+
+#nb_iter = 10000
+#for i in range(nb_iter):
+#    st_f_1, gr_C_1, tr_P_1 = alter_solution(st_f_0, gr_C_0, tr_P_0)
+#    verify_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
+#    cost_1 = cost_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
+##    print(m.exp(-(cost_1 - cost)/param))
+##    if cost_1 < cost or rd.uniform(0,1) < m.exp(-(cost_1 - cost)/param):
+#    if cost_1 < cost:
+#        st_f_0 = st_f_1.copy()
+#        gr_C_0 = [C.copy() for C in gr_C_1]
+#        tr_P_0 = [[P[0], P[1], P[2], P[3].copy(), P[4].copy()] for P in tr_P_1]
+#        cost = cost_1
+#        print(cost)
+##        print_solution(st_f_0, gr_C_0, tr_P_0, "solution.txt")
+#    
+#    if i == 100:
+#        print("Limite")
     
-    if i == 100:
-        print("Limite")
-    
+
+
+
+
+
 
 
 

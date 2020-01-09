@@ -13,11 +13,65 @@ import random as rd
 from get_data import get_data
 from evaluate_solution import evaluate_solution, cost_solution, verify_solution
 
+
 #data_file_name = "Instance-plus-propre.csv"
 data_file_name = "usine.csv"
 
 
 Q, F, H, L_f, a = get_data(data_file_name)
+
+
+
+
+
+# TEMPORAIRE
+def add_tr_of_groups_best_method(ids_gr_C, gr_C, tr_P):
+    for c in ids_gr_C:
+        C = gr_C[c]
+        for s in range(H):
+            if len(C) == 1:
+                f = C[0]
+                nb_P_fs = int(march(f, s)/Q) + 1
+                for i in range(nb_P_fs - 1):
+                    tr_P.append([c, s, 1, [f], [Q]])
+                if march(f, s)%Q != 0:
+                    tr_P.append([c, s, 1, [f], [march(f, s)%Q]])
+            elif sum([march(f, s) for f in C]) != 0:
+                for f in C:
+                    for i in range(march(f, s)//Q):
+                        tr_P.append([c, s, 1, [f], [Q]])
+            
+                # method 1
+                tr_C_1 = []
+                set_of_f_lists_q_lists = best_tournees_residuals_proportional(C, s)
+                for f_list, q_list in set_of_f_lists_q_lists:
+                    tr_C_1.append([c, s, len(f_list), f_list, q_list])
+                    
+                # method 2
+                tr_C_2 = []
+                if sum([residual(f, s) for f in C]) != 0:
+                    ens_tournees = best_tournees_residuals(C, s)
+                    for route in ens_tournees:
+                        tr_C_2.append([c, s, len(route), [f for f in route],
+                                     [residual(f, s) for f in route]])
+                
+                cost_1 = cost_ens_tr([P[-2] for P in tr_C_1])
+                cost_2 = cost_ens_tr([P[-2] for P in tr_C_2])
+                if cost_2 < cost_1:
+    #                tr_P = tr_P + tr_C_2
+                    for P in tr_C_2:
+                        tr_P.append(P)
+                else:
+    #                tr_P = tr_P + tr_C_1
+                    for P in tr_C_1:
+                        tr_P.append(P)
+
+
+
+
+
+
+
 
 
 def partitions(collection):
@@ -239,8 +293,6 @@ def immediate_neighbors():
 
 def compute_solution(s1):
     
-    C_tournees_pleines = 0
-    
     # Calcul des fournisseurs sous-traites
     st_f = [f for f in range(F) if should_st(f)]
     
@@ -251,7 +303,8 @@ def compute_solution(s1):
         f_traites[f] = True
 
         
-    new_method = True
+    new_method = False
+    new_method_tr = True
 #    if new_method:
 #        for f in range(F):
 #            if not f_traites[f]:
@@ -335,47 +388,39 @@ def compute_solution(s1):
 #            set_of_f_lists_q_lists = best_tournees_residuals_proportional(C, s)
 #            for f_list, q_list in set_of_f_lists_q_lists:
 #                tr_P.append([c, s, len(f_list), f_list, q_list])
-
-    for c in range(len(gr_C)):
-        C = gr_C[c]
-        for s in range(H):
-            if len(C) == 1:
-                f = C[0]
-                nb_P_fs = int(march(f, s)/Q) + 1
-                for i in range(nb_P_fs - 1):
-                    C_tournees_pleines += cost_tr([f])
-                    tr_P.append([c, s, 1, [f], [Q]])
-                if march(f, s)%Q != 0:
-                    tr_P.append([c, s, 1, [f], [march(f, s)%Q]])
-                    nb_P_tot += 1
-                nb_P_tot += nb_P_fs - 1
-            elif sum([march(f, s) for f in C]) != 0:
-                for f in C:
-                    for i in range(march(f, s)//Q):
-                        C_tournees_pleines += cost_tr([f])
+    
+    if new_method_tr:
+        add_tr_of_groups_best_method(list(range(len(gr_C))), gr_C, tr_P)
+    else:
+        for c in range(len(gr_C)):
+            C = gr_C[c]
+            for s in range(H):
+                if len(C) == 1:
+                    f = C[0]
+                    nb_P_fs = int(march(f, s)/Q) + 1
+                    for i in range(nb_P_fs - 1):
                         tr_P.append([c, s, 1, [f], [Q]])
-                    nb_P_tot += march(f, s)//Q
-                if sum([residual(f, s) for f in C]) != 0:
-                    ens_tournees = best_tournees_residuals(C, s)
-                    for route in ens_tournees:
-                        tr_P.append([c, s, len(route), [f for f in route],
-                                     [residual(f, s) for f in route]])
+                    if march(f, s)%Q != 0:
+                        tr_P.append([c, s, 1, [f], [march(f, s)%Q]])
                         nb_P_tot += 1
-                        if sum([residual(f, s) for f in route]) == Q:
-                            C_tournees_pleines += cost_tr(route)
+                    nb_P_tot += nb_P_fs - 1
+                elif sum([march(f, s) for f in C]) != 0:
+                    for f in C:
+                        for i in range(march(f, s)//Q):
+                            tr_P.append([c, s, 1, [f], [Q]])
+                        nb_P_tot += march(f, s)//Q
+                    if sum([residual(f, s) for f in C]) != 0:
+                        ens_tournees = best_tournees_residuals(C, s)
+                        for route in ens_tournees:
+                            tr_P.append([c, s, len(route), [f for f in route],
+                                         [residual(f, s) for f in route]])
+                            nb_P_tot += 1
     
 
 #    print("Nb de fournisseurs sous-traites :", len(st_f))
 #    print("Nb de groupes :", len(gr_C))
 #    print("Nb de groupes non singletons :", len([C for C in gr_C if len(C) > 1]))
 #    print("Cout des tournees pleines :", C_tournees_pleines)
-
-    gr_C_non_sing = []
-    for C in gr_C:
-        if len(C) > 1:
-            gr_C_non_sing.append(C)
-#    print("Cardinal moyen des groupes non singleton:",
-#          sum([len(C) for C in gr_C_non_sing]) / len(gr_C_non_sing))
     
     return st_f, gr_C, tr_P
     
