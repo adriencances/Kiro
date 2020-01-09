@@ -286,6 +286,33 @@ def find_best_permut_in_groups(c1, c2, gr_C, tr_P):
     add_tr_of_groups_best_method([c1, c2], gr_C, tr_P)
     print("done")
 
+# ATTENTION : C1, C2 et C3 doivent tous deux etre de cardinal 4
+def find_best_permut_in_3_groups(c1, c2, c3, gr_C, tr_P):
+    assert len(list(set([c1, c2, c3]))) == 3 and min([len(gr_C[c]) for c in [c1, c2, c3]])== 4
+    elts = gr_C[c1] + gr_C[c2] + gr_C[c3]
+    possible_C1s = list(it.combinations(elts, 4))
+    list_of_new_C1_C2_tr_P = []
+    i = 0
+    for C1 in possible_C1s:
+        other_elts = [f for f in elts if not f in C1]
+        possible_C2s = list(it.combinations(other_elts, 4))
+        for C2 in possible_C2s:
+            if i%100 == 0:
+                print(i)
+            list_of_new_C1_C2_tr_P.append([C1, C2, []])
+            C3 = [f for f in other_elts if not f in C2]
+            add_tr_of_groups_best_method([0, 1, 2], [C1, C2, C3], list_of_new_C1_C2_tr_P[-1][2])
+            i += 1
+    all_costs = [((C1, C2), cost_ens_tr([P[-2] for P in new_tr_P])) \
+                 for C1, C2, new_tr_P in list_of_new_C1_C2_tr_P]
+    C1, C2 = [list(C) for C in min(all_costs, key = op.itemgetter(1))[0]]
+    C3 = [f for f in elts if not f in C1 and not f in C2]
+    gr_C[c1] = C1
+    gr_C[c2] = C2
+    gr_C[c3] = C3
+    remove_tr_of_groups([c1, c2, c3], tr_P)
+    add_tr_of_groups_best_method([c1, c2, c3], gr_C, tr_P)
+    print("done")
 
 
 def new_group_from_st(st_f, gr_C, tr_P, use_angle):
@@ -344,11 +371,53 @@ def unst_element_intelligent(f, st_f_0, gr_C_0, tr_P_0):
 
 
 
+# remplit un groupe non rempli au max avec un element sous-traite et cherche a optimiser
+# les groupes dans le voisinage
+def fill_group(c, st_f_0, gr_C_0, tr_P_0):
+    st_f, gr_C, tr_P = copy_of_solution(st_f_0, gr_C_0, tr_P_0)
+    assert len(gr_C[c]) < 4
+    bary_C = barycenter(gr_C[c])
+    dist_to_C = [(f, dist_sq(bary_C, coords_rel(f))) for f in st_f]
+    nb_missing = 4 - len(gr_C[c])
+    fs_to_add = [f for f, dist in sorted(dist_to_C, key = op.itemgetter(1))[:nb_missing]]
+    for f in fs_to_add:
+        st_f.remove(f)
+        gr_C[c].append(f)
+    remove_tr_of_groups([c], tr_P)
+    bary_C = barycenter(gr_C[c])
+    
+    dist_to_C = [(f, dist_sq(bary_C, barycenter(gr_C[c2]))) for c2 in range(len(gr_C)) \
+                 if c2 != c and len(gr_C[c2]) == 4]
+    ids_gr_to_check = [c2 for c2, dist in sorted(dist_to_C, key = op.itemgetter(1))[:3]]
+    ids_gr_to_check.append(c)
+    cost = cost_solution(Q, F, H, L_f, a, st_f, gr_C, tr_P)
+    for c1 in ids_gr_to_check:
+        for c2 in ids_gr_to_check:
+            if c1 != c2:
+                st_f_b, gr_C_b, tr_P_b = alter_solution_new(st_f, gr_C, tr_P, c1, c2)
+                verify_solution(Q, F, H, L_f, a, st_f_b, gr_C_b, tr_P_b)
+                cost_b = cost_solution(Q, F, H, L_f, a, st_f_b, gr_C_b, tr_P_b)
+                if cost_b < cost:
+                    st_f = st_f_b.copy()
+                    gr_C = [C.copy() for C in gr_C_b]
+                    tr_P = [[P[0], P[1], P[2], P[3].copy(), P[4].copy()] for P in tr_P_b]
+                    cost = cost_b
+    return st_f, gr_C, tr_P
+
+
+
+
+
+
 def alter_solution_new(st_f_0, gr_C_0, tr_P_0, c1, c2):
     st_f, gr_C, tr_P = copy_of_solution(st_f_0, gr_C_0, tr_P_0)
     find_best_permut_in_groups(c1, c2, gr_C, tr_P)
     return st_f, gr_C, tr_P
 
+def alter_solution_new_3(st_f_0, gr_C_0, tr_P_0, c1, c2, c3):
+    st_f, gr_C, tr_P = copy_of_solution(st_f_0, gr_C_0, tr_P_0)
+    find_best_permut_in_3_groups(c1, c2, c3, gr_C, tr_P)
+    return st_f, gr_C, tr_P
 
 def alter_solution(st_f_0, gr_C_0, tr_P_0):
     st_f, gr_C, tr_P = copy_of_solution(st_f_0, gr_C_0, tr_P_0)
@@ -413,8 +482,15 @@ def alter_solution(st_f_0, gr_C_0, tr_P_0):
 
 
 
-st_f_0, gr_C_0, tr_P_0 = read_solution("solution.txt")
-#st_f_0, gr_C_0, tr_P_0 = read_solution("solution_super.txt")
+
+now = datetime.now()
+current_time = now.strftime("%H:%M:%S")
+print("Start at =", current_time)
+
+
+
+#st_f_0, gr_C_0, tr_P_0 = read_solution("solution.txt")
+st_f_0, gr_C_0, tr_P_0 = read_solution("solution_super.txt")
 #st_f_0, gr_C_0, tr_P_0 = compute_solution(0)
 verify_solution(Q, F, H, L_f, a, st_f_0, gr_C_0, tr_P_0)
 cost = cost_solution(Q, F, H, L_f, a, st_f_0, gr_C_0, tr_P_0)
@@ -422,6 +498,22 @@ print(cost)
 
 st_f_1, gr_C_1, tr_P_1 = alter_solution(st_f_0, gr_C_0, tr_P_0)
 verify_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
+
+
+
+
+
+for c in [c for c in range(len(gr_C_0)) if len(gr_C_0[c]) < 4]:
+    print("groupe", c)
+    st_f_1, gr_C_1, tr_P_1 = fill_group(c, st_f_0, gr_C_0, tr_P_0)
+    verify_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
+    cost_1 = cost_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
+    if cost_1 < cost:
+        st_f_0 = st_f_1.copy()
+        gr_C_0 = [C.copy() for C in gr_C_1]
+        tr_P_0 = [[P[0], P[1], P[2], P[3].copy(), P[4].copy()] for P in tr_P_1]
+        cost = cost_1
+        print(cost)
 
 
 #st_f_initial = st_f_0.copy()
@@ -437,15 +529,15 @@ verify_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
 #        print(cost)
     
 
-#now = datetime.now()
-#current_time = now.strftime("%H:%M:%S")
-#print("Start at =", current_time)
-
 
 #nb_iter = 20
-#theta = 0.0025
+#theta = 0.00125
 #for i in range(nb_iter):
 #    print(20 * " ", i)
+#    if i%2 == 0:
+#        theta = 0.0025
+#    else :
+#        theta = 0.01
 #    for c1 in range(len(gr_C_1)):
 #        C1 = gr_C_1[c1]
 #        bary_1 = barycenter(C1)
@@ -462,34 +554,33 @@ verify_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
 #                    tr_P_0 = [[P[0], P[1], P[2], P[3].copy(), P[4].copy()] for P in tr_P_1]
 #                    cost = cost_1
 #                    print(cost)
-#    if theta < 0.1:
-#        theta *= 2
-
-#now = datetime.now()
-#current_time = now.strftime("%H:%M:%S")
-#print("Done at =", current_time)
+##    if theta < 0.01:
+##        theta *= 2
 
 
 
-nb_iter = 10000
-for i in range(nb_iter):
-    st_f_1, gr_C_1, tr_P_1 = alter_solution(st_f_0, gr_C_0, tr_P_0)
-    verify_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
-    cost_1 = cost_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
-    if cost_1 < cost:
-        st_f_0 = st_f_1.copy()
-        gr_C_0 = [C.copy() for C in gr_C_1]
-        tr_P_0 = [[P[0], P[1], P[2], P[3].copy(), P[4].copy()] for P in tr_P_1]
-        cost = cost_1
-        print(cost)
-#        print_solution(st_f_0, gr_C_0, tr_P_0, "solution.txt")
-    if i%100 == 0:
-        print(20* " ", i/nb_iter*100)
+
+#nb_iter = 10000
+#for i in range(nb_iter):
+#    st_f_1, gr_C_1, tr_P_1 = alter_solution(st_f_0, gr_C_0, tr_P_0)
+#    verify_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
+#    cost_1 = cost_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
+#    if cost_1 < cost:
+#        st_f_0 = st_f_1.copy()
+#        gr_C_0 = [C.copy() for C in gr_C_1]
+#        tr_P_0 = [[P[0], P[1], P[2], P[3].copy(), P[4].copy()] for P in tr_P_1]
+#        cost = cost_1
+#        print(cost)
+##        print_solution(st_f_0, gr_C_0, tr_P_0, "solution.txt")
+#    if i%100 == 0:
+#        print(20* " ", i/nb_iter*100)
     
 
 
 
-
+now = datetime.now()
+current_time = now.strftime("%H:%M:%S")
+print("Done at =", current_time)
 
 
 
