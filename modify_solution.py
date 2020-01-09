@@ -18,6 +18,8 @@ from make_solution import (Q, F, H, L_f, a,
                            compute_solution, print_solution, should_st,
                            coords_rel, angle_rel, dist_sq, barycenter)
 
+from datetime import datetime
+
 list_st_sure = [f for f in range(F) if should_st(f)]
 
 def copy_of_solution(st_f_0, gr_C_0, tr_P_0):
@@ -351,8 +353,7 @@ def alter_solution_new(st_f_0, gr_C_0, tr_P_0, c1, c2):
 def alter_solution(st_f_0, gr_C_0, tr_P_0):
     st_f, gr_C, tr_P = copy_of_solution(st_f_0, gr_C_0, tr_P_0)
 
-#    case = rd.choice([0, 7])
-    case = 9
+    case = rd.choice([0, 2, 6])
     
     
 #    if countor < 100:
@@ -380,11 +381,11 @@ def alter_solution(st_f_0, gr_C_0, tr_P_0):
     elif case == 4:
         st_non_isolated_element(st_f, gr_C, tr_P)
 
-    # de-sous-traite un elememt si possible
+    # de-sous-traite un element si possible
     elif case == 5:
         unst_element(st_f, gr_C, tr_P)
     
-    # de-sous-traite un elememt et l'ajoute a un groupe deja existant (si possible)
+    # de-sous-traite un element et l'ajoute a un groupe deja existant (si possible)
     elif case == 6:
         unst_element_and_add_to_a_group(st_f, gr_C, tr_P)
 
@@ -396,6 +397,7 @@ def alter_solution(st_f_0, gr_C_0, tr_P_0):
     elif case == 8:
         new_group_from_st(st_f, gr_C, tr_P, True)
 
+    # ajoute un element sous-traite a un groupe non rempli au max
     elif case == 9:
         ids_gr_C_not_filled = [c for c in range(len(gr_C)) if len(gr_C[c]) < 4]
         if ids_gr_C_not_filled == []:
@@ -411,8 +413,8 @@ def alter_solution(st_f_0, gr_C_0, tr_P_0):
 
 
 
-
-st_f_0, gr_C_0, tr_P_0 = read_solution("solution_super.txt")
+st_f_0, gr_C_0, tr_P_0 = read_solution("solution.txt")
+#st_f_0, gr_C_0, tr_P_0 = read_solution("solution_super.txt")
 #st_f_0, gr_C_0, tr_P_0 = compute_solution(0)
 verify_solution(Q, F, H, L_f, a, st_f_0, gr_C_0, tr_P_0)
 cost = cost_solution(Q, F, H, L_f, a, st_f_0, gr_C_0, tr_P_0)
@@ -422,22 +424,26 @@ st_f_1, gr_C_1, tr_P_1 = alter_solution(st_f_0, gr_C_0, tr_P_0)
 verify_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
 
 
-st_f_initial = st_f_0.copy()
-
-for f in st_f_initial:
-    st_f_1, gr_C_1, tr_P_1 = unst_element_intelligent(f, st_f_0, gr_C_0, tr_P_0)
-    verify_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
-    cost_1 = cost_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
-    if cost_1 < cost:
-        st_f_0 = st_f_1.copy()
-        gr_C_0 = [C.copy() for C in gr_C_1]
-        tr_P_0 = [[P[0], P[1], P[2], P[3].copy(), P[4].copy()] for P in tr_P_1]
-        cost = cost_1
-        print(cost)
+#st_f_initial = st_f_0.copy()
+#for f in st_f_initial:
+#    st_f_1, gr_C_1, tr_P_1 = unst_element_intelligent(f, st_f_0, gr_C_0, tr_P_0)
+#    verify_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
+#    cost_1 = cost_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
+#    if cost_1 < cost:
+#        st_f_0 = st_f_1.copy()
+#        gr_C_0 = [C.copy() for C in gr_C_1]
+#        tr_P_0 = [[P[0], P[1], P[2], P[3].copy(), P[4].copy()] for P in tr_P_1]
+#        cost = cost_1
+#        print(cost)
     
+
+#now = datetime.now()
+#current_time = now.strftime("%H:%M:%S")
+#print("Start at =", current_time)
 
 
 #nb_iter = 20
+#theta = 0.0025
 #for i in range(nb_iter):
 #    print(20 * " ", i)
 #    for c1 in range(len(gr_C_1)):
@@ -446,7 +452,7 @@ for f in st_f_initial:
 #        for c2 in range(c1):
 #            C2 = gr_C_1[c2]
 #            bary_2 = barycenter(C2)
-#            if len(gr_C_1[c1]) == 4 and len(gr_C_1[c2]) == 4 and abs(angle_rel(bary_1, bary_2)) < 0.005 :
+#            if len(gr_C_1[c1]) == 4 and len(gr_C_1[c2]) == 4 and abs(angle_rel(bary_1, bary_2)) < theta:
 #                st_f_1, gr_C_1, tr_P_1 = alter_solution_new(st_f_0, gr_C_0, tr_P_0, c1, c2)
 #                verify_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
 #                cost_1 = cost_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
@@ -456,23 +462,29 @@ for f in st_f_initial:
 #                    tr_P_0 = [[P[0], P[1], P[2], P[3].copy(), P[4].copy()] for P in tr_P_1]
 #                    cost = cost_1
 #                    print(cost)
+#    if theta < 0.1:
+#        theta *= 2
+
+#now = datetime.now()
+#current_time = now.strftime("%H:%M:%S")
+#print("Done at =", current_time)
 
 
 
-#nb_iter = 10000
-#for i in range(nb_iter):
-#    st_f_1, gr_C_1, tr_P_1 = alter_solution(st_f_0, gr_C_0, tr_P_0)
-#    verify_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
-#    cost_1 = cost_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
-#    if cost_1 < cost:
-#        st_f_0 = st_f_1.copy()
-#        gr_C_0 = [C.copy() for C in gr_C_1]
-#        tr_P_0 = [[P[0], P[1], P[2], P[3].copy(), P[4].copy()] for P in tr_P_1]
-#        cost = cost_1
-#        print(cost)
-##        print_solution(st_f_0, gr_C_0, tr_P_0, "solution.txt")
-#    if i == 100:
-#        print("Limite")
+nb_iter = 10000
+for i in range(nb_iter):
+    st_f_1, gr_C_1, tr_P_1 = alter_solution(st_f_0, gr_C_0, tr_P_0)
+    verify_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
+    cost_1 = cost_solution(Q, F, H, L_f, a, st_f_1, gr_C_1, tr_P_1)
+    if cost_1 < cost:
+        st_f_0 = st_f_1.copy()
+        gr_C_0 = [C.copy() for C in gr_C_1]
+        tr_P_0 = [[P[0], P[1], P[2], P[3].copy(), P[4].copy()] for P in tr_P_1]
+        cost = cost_1
+        print(cost)
+#        print_solution(st_f_0, gr_C_0, tr_P_0, "solution.txt")
+    if i%100 == 0:
+        print(20* " ", i/nb_iter*100)
     
 
 

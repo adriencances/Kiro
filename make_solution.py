@@ -21,9 +21,49 @@ data_file_name = "usine.csv"
 Q, F, H, L_f, a = get_data(data_file_name)
 
 
+# TEMPORAIRE
+def add_tr_of_groups(ids_gr_C, gr_C, tr_P):
+    for c in ids_gr_C:
+        C = gr_C[c]
+        for s in range(H):
+            if len(C) == 1:
+                f = C[0]
+                nb_P_fs = int(march(f, s)/Q) + 1
+                for i in range(nb_P_fs - 1):
+                    tr_P.append([c, s, 1, [f], [Q]])
+                if march(f, s)%Q != 0:
+                    tr_P.append([c, s, 1, [f], [march(f, s)%Q]])
+            elif sum([march(f, s) for f in C]) != 0:
+                for f in C:
+                    for i in range(march(f, s)//Q):
+                        tr_P.append([c, s, 1, [f], [Q]])
+                if sum([residual(f, s) for f in C]) != 0:
+                    ens_tournees = best_tournees_residuals(C, s)
+                    for route in ens_tournees:
+                        tr_P.append([c, s, len(route), [f for f in route],
+                                     [residual(f, s) for f in route]])
 
-
-
+# TEMPORAIRE
+def add_tr_of_groups_proportional(ids_gr_C, gr_C, tr_P):
+    for c in ids_gr_C:
+        C = gr_C[c]
+        for s in range(H):
+            if len(C) == 1:
+                f = C[0]
+                nb_P_fs = int(march(f, s)/Q) + 1
+                for i in range(nb_P_fs - 1):
+                    tr_P.append([c, s, 1, [f], [Q]])
+                if march(f, s)%Q != 0:
+                    tr_P.append([c, s, 1, [f], [march(f, s)%Q]])
+            elif sum([march(f, s) for f in C]) != 0:
+                for f in C:
+                    for i in range(march(f, s)//Q):
+                        tr_P.append([c, s, 1, [f], [Q]])
+                if sum([residual(f, s) for f in C]) != 0:
+                    set_of_f_lists_q_lists = best_tournees_residuals_proportional(C, s)
+                    for f_list, q_list in set_of_f_lists_q_lists:
+                        tr_P.append([c, s, len(f_list), f_list, q_list])
+    
 # TEMPORAIRE
 def add_tr_of_groups_best_method(ids_gr_C, gr_C, tr_P):
     for c in ids_gr_C:
@@ -122,7 +162,7 @@ def generate_sets(C):
 def should_st(f):
 #    appr_min_cost = sum([(a[F][f] + a[f][F + 1]) * m.ceil(march(f, s)/Q) for s in range(H)])
 #    appr_min_cost = sum([(a[F][f] + a[f][F + 1]) * m.floor(march(f, s)/Q) for s in range(H)])
-    appr_min_cost = sum([(a[F][f] + a[f][F + 1]) * (m.floor(march(f, s)/Q) + 0.2) for s in range(H)])
+    appr_min_cost = sum([(a[F][f] + a[f][F + 1]) * (m.floor(march(f, s)/Q) + 0.1) for s in range(H)])
     if appr_min_cost >= cost_st(f):
         return True
     return False
@@ -312,7 +352,7 @@ def compute_solution(s1):
 
         
     new_method = False
-    new_method_tr = True
+    new_method_tr = False
 #    if new_method:
 #        for f in range(F):
 #            if not f_traites[f]:
