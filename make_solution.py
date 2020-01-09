@@ -272,15 +272,23 @@ def coords_rel(f):
     x0, y0 = coords(F)
     return (x - x0, y - y0)
 
-def angle_val(f_1, f_2):
-    x1, y1 = coords_rel(f_1)
-    x2, y2 = coords_rel(f_2)
+def angle_rel(A, B):
+    x1, y1 = A
+    x2, y2 = B
     scalar_product = x1*x2 + y1*y2
     norm_1 = (x1**2 + y1**2)**(0.5)
     norm_2 = (x2**2 + y2**2)**(0.5)
+    if norm_1 == 0 or norm_2 == 0:
+        return 0
     ratio = min(abs(scalar_product/(norm_1*norm_2)), 1)
     return m.acos(ratio)
 
+
+def barycenter(C):
+    x_bary = sum([coords(f)[0] for f in C])/len(C)
+    y_bary = sum([coords(f)[1] for f in C])/len(C)
+    coords_bary = (x_bary, y_bary)
+    return coords_bary
 
 
 
@@ -349,9 +357,7 @@ def compute_solution(s1):
                 C = gr_C[c]
                 if len(C) == 4:
                     continue
-                x_bary = sum([coords(f)[0] for f in C])/len(C)
-                y_bary = sum([coords(f)[1] for f in C])/len(C)
-                coords_bary = (x_bary, y_bary)
+                coords_bary = barycenter(C)
                 dist_to_C = [(f_v, dist_sq(coords(f_v), coords_bary)) \
                                  for f_v in range(F) if not f_traites[f_v]]
                 dist_to_C = sorted(dist_to_C, key = op.itemgetter(1))
